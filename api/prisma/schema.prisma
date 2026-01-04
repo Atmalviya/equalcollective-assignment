@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RunStatus {
+  running
+  success
+  failed
+  partial
+}
+
+enum StepType {
+  llm
+  filter
+  retrieval
+  ranking
+  selection
+  other
+}
+
+enum StepStatus {
+  success
+  failed
+  skipped
+}
+
+
+model Run {
+  id                String          @id @default(uuid())
+  pipelineName      String
+  status            RunStatus       @default(running)
+  startedAt         DateTime        @default(now())
+  endedAt           DateTime?
+  traceId           String?
+  metadata          Json            @default("{}")
+  steps             Step[]
+  
+  @@index([pipelineName])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model Step {
+  id                String        @id @default(uuid())
+  runId             String
+  stepName          String
+  stepType          StepType      @default(other)
+  order             Int
+  status            StepStatus    @default(success)
+  startedAt         DateTime      @default(now())
+  endedAt           DateTime?
+  metrics           Json          @default("{}")
+  summary           String?
+  run               Run           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  stepDetails       StepDetails?
+  
+  @@index([runId])
+  @@index([stepType])
+  @@index([stepName])
+  @@index([status])
+}
+
+model StepDetails {
+  id                    String      @id @default(uuid())
+  stepId                String      @unique
+  input                 Json?
+  output                Json?
+  reasoning             Json?
+  filtersApplied        Json?
+  candidatesSample      Json?
+  candidatesStats       Json?
+  step                  Step        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  
+  @@index([stepId])
+}
+
