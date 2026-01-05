@@ -64,6 +64,7 @@ async function processEvent(event: XRayEvent): Promise<void> {
 
     case 'step_started':
       if (event.step) {
+        // Step will be created/updated when step_ended event arrives
       }
       break;
 

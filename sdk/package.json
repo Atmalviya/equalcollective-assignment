@@ -1,0 +1,23 @@
+{
+  "name": "@atmalviya/xray-js",
+  "version": "0.1.0",
+  "description": "X-Ray SDK for debugging multi-step, non-deterministic algorithmic systems",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["xray", "debugging", "pipeline", "tracing", "decision-tracking"],
+  "author": "Atul Malviya",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1"
+  }
+}
+

@@ -92,5 +92,127 @@ router.get('/runs/:runId', async (req: Request, res: Response) => {
   }
 });
 
+
+router.get('/runs/:runId/steps/:stepId', async (req: Request, res: Response) => {
+  try {
+    const { runId, stepId } = req.params;
+
+    const step = await prisma.step.findFirst({
+      where: {
+        id: stepId,
+        runId: runId,
+      },
+      include: {
+        stepDetails: true,
+        run: {
+          select: {
+            id: true,
+            pipelineName: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!step) {
+      return res.status(404).json({ error: 'Step not found' });
+    }
+
+    res.json({ step });
+  } catch (error: any) {
+    console.error('Error fetching step:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+router.post('/query/steps', async (req: Request, res: Response) => {
+  try {
+    const { filters = [], include = [], limit = 100, offset = 0 } = req.body;
+
+    const where: Prisma.StepWhereInput = {};
+
+    // Process filters
+    for (const filter of filters) {
+      const { field, op, value } = filter;
+
+      if (field === 'stepType') {
+        if (op === 'eq') {
+          where.stepType = value as any;
+        }
+      } else if (field === 'stepName') {
+        if (op === 'eq') {
+          where.stepName = value;
+        } else if (op === 'contains') {
+          where.stepName = { contains: value };
+        }
+      } else if (field === 'status') {
+        if (op === 'eq') {
+          where.status = value as any;
+        }
+      } else if (field === 'runId') {
+        if (op === 'eq') {
+          where.runId = value;
+        }
+      } else if (field === 'pipelineName') {
+        where.run = { pipelineName: value };
+      } else if (field.startsWith('metrics.')) {
+        const metricKey = field.replace('metrics.', '');
+        const metricValue = typeof value === 'number' ? value : parseFloat(value);
+        
+        if (op === 'gt') {
+          where.metrics = {
+            path: [metricKey],
+            gt: metricValue,
+          } as Prisma.JsonFilter;
+        } else if (op === 'gte') {
+          where.metrics = {
+            path: [metricKey],
+            gte: metricValue,
+          } as Prisma.JsonFilter;
+        } else if (op === 'lt') {
+          where.metrics = {
+            path: [metricKey],
+            lt: metricValue,
+          } as Prisma.JsonFilter;
+        } else if (op === 'lte') {
+          where.metrics = {
+            path: [metricKey],
+            lte: metricValue,
+          } as Prisma.JsonFilter;
+        } else if (op === 'eq') {
+          where.metrics = {
+            path: [metricKey],
+            equals: metricValue,
+          } as Prisma.JsonFilter;
+        }
+      }
+    }
+
+    const includeOptions: Prisma.StepInclude = {};
+    if (include.includes('run')) {
+      includeOptions.run = true;
+    }
+    if (include.includes('stepDetails')) {
+      includeOptions.stepDetails = true;
+    }
+
+    const [steps, count] = await Promise.all([
+      prisma.step.findMany({
+        where,
+        include: includeOptions,
+        orderBy: { startedAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.step.count({ where }),
+    ]);
+
+    res.json({ steps, count });
+  } catch (error: any) {
+    console.error('Error querying steps:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 export default router;
 
