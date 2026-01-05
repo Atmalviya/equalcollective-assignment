@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
-import { Prisma, type RunStatus, type Run, type Step } from '@prisma/client';
+import { Prisma, type RunStatus, type Run, type Step, type StepType, type StepStatus } from '@prisma/client';
 
 const router = Router();
 
@@ -22,7 +22,14 @@ router.get('/runs', async (req: Request, res: Response) => {
     }
 
     if (status) {
-      where.status = status as RunStatus;
+      const validStatuses: RunStatus[] = ['running', 'success', 'failed', 'partial'];
+      if (validStatuses.includes(status as RunStatus)) {
+        where.status = status as RunStatus;
+      } else {
+        return res.status(400).json({ 
+          error: `Invalid status: ${status}. Valid values are: ${validStatuses.join(', ')}` 
+        });
+      }
     }
 
     if (startDate || endDate) {
@@ -137,7 +144,14 @@ router.post('/query/steps', async (req: Request, res: Response) => {
 
       if (field === 'stepType') {
         if (op === 'eq') {
-          where.stepType = value as any;
+          const validStepTypes: StepType[] = ['llm', 'filter', 'retrieval', 'ranking', 'selection', 'other'];
+          if (validStepTypes.includes(value as StepType)) {
+            where.stepType = value as StepType;
+          } else {
+            return res.status(400).json({ 
+              error: `Invalid stepType: ${value}. Valid values are: ${validStepTypes.join(', ')}` 
+            });
+          }
         }
       } else if (field === 'stepName') {
         if (op === 'eq') {
@@ -147,7 +161,14 @@ router.post('/query/steps', async (req: Request, res: Response) => {
         }
       } else if (field === 'status') {
         if (op === 'eq') {
-          where.status = value as any;
+          const validStatuses: StepStatus[] = ['success', 'failed', 'skipped'];
+          if (validStatuses.includes(value as StepStatus)) {
+            where.status = value as StepStatus;
+          } else {
+            return res.status(400).json({ 
+              error: `Invalid status: ${value}. Valid values are: ${validStatuses.join(', ')}` 
+            });
+          }
         }
       } else if (field === 'runId') {
         if (op === 'eq') {

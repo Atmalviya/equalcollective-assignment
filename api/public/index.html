@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Ray API Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+            background: #0a0e27;
+            color: #e4e4e7;
+            min-height: 100vh;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #0f1629;
+            min-height: 100vh;
+            border-left: 1px solid #1e293b;
+            border-right: 1px solid #1e293b;
+        }
+
+        header {
+            background: #0a0e27;
+            border-bottom: 2px solid #00d9ff;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #00d9ff;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+            font-family: 'SF Mono', monospace;
+        }
+
+        header h1::before {
+            content: '> ';
+            color: #64748b;
+            margin-right: 8px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 0.9em;
+            font-weight: 400;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .tab {
+            padding: 14px 28px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+            transition: all 0.2s;
+            font-family: 'SF Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab:hover {
+            color: #00d9ff;
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .tab.active {
+            color: #00d9ff;
+            border-bottom-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.08);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .filters {
+            background: #0a0e27;
+            border: 1px solid #1e293b;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 1px solid #1e293b;
+            background: #0f1629;
+            color: #e4e4e7;
+            font-size: 14px;
+            font-family: 'SF Mono', monospace;
+            transition: border-color 0.2s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #00d9ff;
+            box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.1);
+        }
+
+        button {
+            background: #00d9ff;
+            color: #0a0e27;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'SF Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            border: 1px solid #00d9ff;
+        }
+
+        button:hover {
+            background: #00c4e6;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .results {
+            margin-top: 24px;
+        }
+
+        .run-card,
+        .step-card {
+            background: #0a0e27;
+            border: 1px solid #1e293b;
+            border-left: 3px solid #00d9ff;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+
+        .run-card:hover,
+        .step-card:hover {
+            border-left-color: #00ffd9;
+            background: rgba(0, 217, 255, 0.03);
+        }
+
+        .run-header,
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .run-title,
+        .step-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #00d9ff;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .status {
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'SF Mono', monospace;
+            border: 1px solid;
+        }
+
+        .status.running {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border-color: #ffc107;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .status.failed {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border-color: #f44336;
+        }
+
+        .metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        .metadata-item {
+            color: #94a3b8;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .metadata-item strong {
+            color: #e4e4e7;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .steps-list {
+            margin-top: 20px;
+        }
+
+        .step-item {
+            padding: 12px;
+            background: #0f1629;
+            border-left: 2px solid #00d9ff;
+            border-top: 1px solid #1e293b;
+            border-right: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .step-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .step-name {
+            font-weight: 600;
+            color: #e4e4e7;
+            font-size: 13px;
+        }
+
+        .step-type {
+            font-size: 11px;
+            color: #64748b;
+            background: #0a0e27;
+            padding: 3px 8px;
+            border: 1px solid #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .json-viewer {
+            background: #0a0e27;
+            border: 1px solid #1e293b;
+            padding: 16px;
+            margin-top: 12px;
+            max-height: 400px;
+            overflow: auto;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .json-viewer pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .loading::before {
+            content: '[...] ';
+            color: #00d9ff;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            padding: 16px;
+            border: 1px solid #f44336;
+            margin-bottom: 20px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .error::before {
+            content: '[ERROR] ';
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #64748b;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .empty-state::before {
+            content: '[EMPTY] ';
+            color: #00d9ff;
+            display: block;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .view-details-btn {
+            margin-top: 16px;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .details-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .details-section h3 {
+            margin-bottom: 16px;
+            color: #00d9ff;
+            font-family: 'SF Mono', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .details-section h4 {
+            margin-bottom: 12px;
+            color: #94a3b8;
+            font-family: 'SF Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .accordion {
+            margin-top: 16px;
+        }
+
+        .accordion-item {
+            border: 1px solid #1e293b;
+            border-left: 2px solid #00d9ff;
+            margin-bottom: 8px;
+            background: #0f1629;
+        }
+
+        .accordion-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .accordion-header:hover {
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .accordion-header.active {
+            background: rgba(0, 217, 255, 0.08);
+        }
+
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .accordion-icon {
+            color: #00d9ff;
+            font-size: 12px;
+            transition: transform 0.2s;
+            width: 16px;
+            text-align: center;
+        }
+
+        .accordion-header.active .accordion-icon {
+            transform: rotate(90deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border-top: 1px solid #1e293b;
+        }
+
+        .accordion-content.active {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .accordion-body {
+            padding: 16px;
+            font-family: 'SF Mono', monospace;
+            font-size: 13px;
+        }
+
+        .step-info-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .step-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step-info-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .step-info-value {
+            color: #e4e4e7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>X-Ray API</h1>
+                <p>Pipeline Debugging & Monitoring</p>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('runs')">Pipeline Runs</button>
+                <button class="tab" onclick="switchTab('query')">Query Steps</button>
+            </div>
+
+            <!-- Runs Tab -->
+            <div id="runs-tab" class="tab-content active">
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Pipeline Name</label>
+                            <input type="text" id="filter-pipeline" placeholder="e.g., competitor-selection">
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="filter-status">
+                                <option value="">All</option>
+                                <option value="running">Running</option>
+                                <option value="success">Success</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Start Date</label>
+                            <input type="date" id="filter-start-date">
+                        </div>
+                        <div class="filter-group">
+                            <label>End Date</label>
+                            <input type="date" id="filter-end-date">
+                        </div>
+                    </div>
+                    <button onclick="loadRuns()">Load Runs</button>
+                </div>
+
+                <div id="runs-results" class="results">
+                    <div class="loading">Ready to load pipeline runs</div>
+                </div>
+            </div>
+
+            <!-- Query Tab -->
+            <div id="query-tab" class="tab-content">
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Step Type</label>
+                            <select id="query-step-type">
+                                <option value="">All</option>
+                                <option value="llm">LLM</option>
+                                <option value="filter">Filter</option>
+                                <option value="retrieval">Retrieval</option>
+                                <option value="ranking">Ranking</option>
+                                <option value="selection">Selection</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Step Name</label>
+                            <input type="text" id="query-step-name" placeholder="e.g., filter-by-revenue">
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="query-status">
+                                <option value="">All</option>
+                                <option value="success">Success</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Pipeline Name</label>
+                            <input type="text" id="query-pipeline-name" placeholder="e.g., competitor-selection">
+                        </div>
+                    </div>
+                    <button onclick="querySteps()">Query Steps</button>
+                </div>
+
+                <div id="query-results" class="results">
+                    <div class="loading">Ready to query steps</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/xray';
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const header = content.previousElementSibling;
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                header.classList.remove('active');
+            } else {
+                content.classList.add('active');
+                header.classList.add('active');
+            }
+        }
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function loadRuns() {
+            const resultsDiv = document.getElementById('runs-results');
+                resultsDiv.innerHTML = '<div class="loading">Loading runs</div>';
+
+            try {
+                const params = new URLSearchParams();
+                const pipelineName = document.getElementById('filter-pipeline').value;
+                const status = document.getElementById('filter-status').value;
+                const startDate = document.getElementById('filter-start-date').value;
+                const endDate = document.getElementById('filter-end-date').value;
+
+                if (pipelineName) params.append('pipelineName', pipelineName);
+                if (status) params.append('status', status);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+
+                const response = await fetch(`${API_BASE}/runs?${params.toString()}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load runs');
+                }
+
+                if (data.runs.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state">No runs found</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = data.runs.map(run => `
+                    <div class="run-card">
+                        <div class="run-header">
+                            <div class="run-title">${run.pipelineName}</div>
+                            <div class="status ${run.status}">${run.status}</div>
+                        </div>
+                        <div class="metadata">
+                            <div class="metadata-item"><strong>Run ID:</strong> ${run.id}</div>
+                            <div class="metadata-item"><strong>Started:</strong> ${new Date(run.startedAt).toLocaleString()}</div>
+                            ${run.endedAt ? `<div class="metadata-item"><strong>Ended:</strong> ${new Date(run.endedAt).toLocaleString()}</div>` : ''}
+                            <div class="metadata-item"><strong>Steps:</strong> ${run.steps?.length || 0}</div>
+                        </div>
+                        ${run.steps && run.steps.length > 0 ? `
+                            <div class="accordion">
+                                <h4 style="margin-top: 16px; margin-bottom: 12px; color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Steps (${run.steps.length})</h4>
+                                ${run.steps.map((step, index) => `
+                                    <div class="accordion-item">
+                                        <div class="accordion-header" onclick="toggleAccordion('step-${run.id}-${index}')">
+                                            <div class="accordion-title">
+                                                <span class="accordion-icon">▶</span>
+                                                <span class="step-name">${step.stepName}</span>
+                                                <span class="step-type">${step.stepType}</span>
+                                            </div>
+                                            <div class="status ${step.status}">${step.status}</div>
+                                        </div>
+                                        <div class="accordion-content" id="step-${run.id}-${index}">
+                                            <div class="accordion-body">
+                                                <div class="step-info-row">
+                                                    <div class="step-info-item">
+                                                        <div class="step-info-label">Order</div>
+                                                        <div class="step-info-value">${step.order}</div>
+                                                    </div>
+                                                    <div class="step-info-item">
+                                                        <div class="step-info-label">Status</div>
+                                                        <div class="step-info-value">${step.status}</div>
+                                                    </div>
+                                                    <div class="step-info-item">
+                                                        <div class="step-info-label">Type</div>
+                                                        <div class="step-info-value">${step.stepType}</div>
+                                                    </div>
+                                                    ${step.startedAt ? `
+                                                    <div class="step-info-item">
+                                                        <div class="step-info-label">Started</div>
+                                                        <div class="step-info-value">${new Date(step.startedAt).toLocaleString()}</div>
+                                                    </div>
+                                                    ` : ''}
+                                                    ${step.endedAt ? `
+                                                    <div class="step-info-item">
+                                                        <div class="step-info-label">Ended</div>
+                                                        <div class="step-info-value">${new Date(step.endedAt).toLocaleString()}</div>
+                                                    </div>
+                                                    ` : ''}
+                                                </div>
+                                                ${step.summary ? `
+                                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b;">
+                                                        <div class="step-info-label" style="margin-bottom: 8px;">Summary</div>
+                                                        <div style="color: #94a3b8;">${step.summary}</div>
+                                                    </div>
+                                                ` : ''}
+                                                ${step.metrics && Object.keys(step.metrics).length > 0 ? `
+                                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b;">
+                                                        <div class="step-info-label" style="margin-bottom: 8px;">Metrics</div>
+                                                        <div class="json-viewer"><pre>${JSON.stringify(step.metrics, null, 2)}</pre></div>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        <button class="view-details-btn" onclick="viewRunDetails('${run.id}')">View Details</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function viewRunDetails(runId) {
+            try {
+                const response = await fetch(`${API_BASE}/runs/${runId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load run details');
+                }
+
+                const run = data.run;
+                const detailsHtml = `
+                    <div class="run-card">
+                        <div class="run-header">
+                            <div class="run-title">${run.pipelineName} - Full Details</div>
+                            <div class="status ${run.status}">${run.status}</div>
+                        </div>
+                        <div class="metadata">
+                            <div class="metadata-item"><strong>Run ID:</strong> ${run.id}</div>
+                            <div class="metadata-item"><strong>Started:</strong> ${new Date(run.startedAt).toLocaleString()}</div>
+                            ${run.endedAt ? `<div class="metadata-item"><strong>Ended:</strong> ${new Date(run.endedAt).toLocaleString()}</div>` : ''}
+                        </div>
+                        ${run.metadata && Object.keys(run.metadata).length > 0 ? `
+                            <div class="details-section">
+                                <h3>Metadata</h3>
+                                <div class="json-viewer"><pre>${JSON.stringify(run.metadata, null, 2)}</pre></div>
+                            </div>
+                        ` : ''}
+                        ${run.steps && run.steps.length > 0 ? `
+                            <div class="details-section">
+                                <h3>Steps (${run.steps.length})</h3>
+                                <div class="accordion">
+                                    ${run.steps.map((step, index) => `
+                                        <div class="accordion-item">
+                                            <div class="accordion-header" onclick="toggleAccordion('detail-step-${run.id}-${index}')">
+                                                <div class="accordion-title">
+                                                    <span class="accordion-icon">▶</span>
+                                                    <span class="step-name">${step.stepName}</span>
+                                                    <span class="step-type">${step.stepType}</span>
+                                                </div>
+                                                <div class="status ${step.status}">${step.status}</div>
+                                            </div>
+                                            <div class="accordion-content" id="detail-step-${run.id}-${index}">
+                                                <div class="accordion-body">
+                                                    <div class="step-info-row">
+                                                        <div class="step-info-item">
+                                                            <div class="step-info-label">Order</div>
+                                                            <div class="step-info-value">${step.order}</div>
+                                                        </div>
+                                                        <div class="step-info-item">
+                                                            <div class="step-info-label">Status</div>
+                                                            <div class="step-info-value">${step.status}</div>
+                                                        </div>
+                                                        <div class="step-info-item">
+                                                            <div class="step-info-label">Type</div>
+                                                            <div class="step-info-value">${step.stepType}</div>
+                                                        </div>
+                                                        ${step.startedAt ? `
+                                                        <div class="step-info-item">
+                                                            <div class="step-info-label">Started</div>
+                                                            <div class="step-info-value">${new Date(step.startedAt).toLocaleString()}</div>
+                                                        </div>
+                                                        ` : ''}
+                                                        ${step.endedAt ? `
+                                                        <div class="step-info-item">
+                                                            <div class="step-info-label">Ended</div>
+                                                            <div class="step-info-value">${new Date(step.endedAt).toLocaleString()}</div>
+                                                        </div>
+                                                        ` : ''}
+                                                    </div>
+                                                    ${step.summary ? `
+                                                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b;">
+                                                            <div class="step-info-label" style="margin-bottom: 8px;">Summary</div>
+                                                            <div style="color: #94a3b8;">${step.summary}</div>
+                                                        </div>
+                                                    ` : ''}
+                                                    ${step.metrics && Object.keys(step.metrics).length > 0 ? `
+                                                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b;">
+                                                            <div class="step-info-label" style="margin-bottom: 8px;">Metrics</div>
+                                                            <div class="json-viewer"><pre>${JSON.stringify(step.metrics, null, 2)}</pre></div>
+                                                        </div>
+                                                    ` : ''}
+                                                    ${step.stepDetails ? `
+                                                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e293b;">
+                                                            <div class="step-info-label" style="margin-bottom: 12px;">Step Details</div>
+                                                            ${step.stepDetails.input ? `
+                                                                <div style="margin-bottom: 12px;">
+                                                                    <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Input:</strong>
+                                                                    <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.input, null, 2)}</pre></div>
+                                                                </div>
+                                                            ` : ''}
+                                                            ${step.stepDetails.output ? `
+                                                                <div style="margin-bottom: 12px;">
+                                                                    <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Output:</strong>
+                                                                    <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.output, null, 2)}</pre></div>
+                                                                </div>
+                                                            ` : ''}
+                                                            ${step.stepDetails.reasoning ? `
+                                                                <div style="margin-bottom: 12px;">
+                                                                    <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Reasoning:</strong>
+                                                                    <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.reasoning, null, 2)}</pre></div>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                const resultsDiv = document.getElementById('runs-results');
+                resultsDiv.innerHTML = detailsHtml;
+            } catch (error) {
+                alert(`Error loading run details: ${error.message}`);
+            }
+        }
+
+        async function querySteps() {
+            const resultsDiv = document.getElementById('query-results');
+            resultsDiv.innerHTML = '<div class="loading">Querying steps</div>';
+
+            try {
+                const filters = [];
+                const stepType = document.getElementById('query-step-type').value;
+                const stepName = document.getElementById('query-step-name').value;
+                const status = document.getElementById('query-status').value;
+                const pipelineName = document.getElementById('query-pipeline-name').value;
+
+                if (stepType) {
+                    filters.push({ field: 'stepType', op: 'eq', value: stepType });
+                }
+                if (stepName) {
+                    filters.push({ field: 'stepName', op: 'contains', value: stepName });
+                }
+                if (status) {
+                    filters.push({ field: 'status', op: 'eq', value: status });
+                }
+                if (pipelineName) {
+                    filters.push({ field: 'pipelineName', op: 'eq', value: pipelineName });
+                }
+
+                const response = await fetch(`${API_BASE}/query/steps`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        filters,
+                        include: ['run', 'stepDetails'],
+                        limit: 100,
+                        offset: 0,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to query steps');
+                }
+
+                if (data.steps.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state">No steps found matching criteria</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = `
+                    <div style="margin-bottom: 16px; font-weight: 600; color: #00d9ff; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Found ${data.count} step(s)
+                    </div>
+                    ${data.steps.map(step => `
+                        <div class="step-card">
+                            <div class="step-header">
+                                <div>
+                                    <div class="step-title">${step.stepName}</div>
+                                    <div style="font-size: 13px; color: #64748b; margin-top: 6px; font-family: 'SF Mono', monospace;">
+                                        ${step.run ? `Pipeline: ${step.run.pipelineName} | ` : ''}
+                                        Type: ${step.stepType} | Order: ${step.order} | 
+                                        Started: ${new Date(step.startedAt).toLocaleString()}
+                                    </div>
+                                </div>
+                                <div class="status ${step.status}">${step.status}</div>
+                            </div>
+                            ${step.summary ? `<div style="margin-top: 10px; color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 13px;">${step.summary}</div>` : ''}
+                            ${step.metrics && Object.keys(step.metrics).length > 0 ? `
+                                <div class="details-section">
+                                    <h4>Metrics</h4>
+                                    <div class="json-viewer"><pre>${JSON.stringify(step.metrics, null, 2)}</pre></div>
+                                </div>
+                            ` : ''}
+                            ${step.stepDetails ? `
+                                <div class="details-section">
+                                    <h4>Step Details</h4>
+                                    ${step.stepDetails.input ? `
+                                        <div style="margin-bottom: 12px;">
+                                            <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Input:</strong>
+                                            <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.input, null, 2)}</pre></div>
+                                        </div>
+                                    ` : ''}
+                                    ${step.stepDetails.output ? `
+                                        <div style="margin-bottom: 12px;">
+                                            <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Output:</strong>
+                                            <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.output, null, 2)}</pre></div>
+                                        </div>
+                                    ` : ''}
+                                    ${step.stepDetails.reasoning ? `
+                                        <div style="margin-bottom: 12px;">
+                                            <strong style="color: #94a3b8; font-family: 'SF Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Reasoning:</strong>
+                                            <div class="json-viewer"><pre>${JSON.stringify(step.stepDetails.reasoning, null, 2)}</pre></div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
+
