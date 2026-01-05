@@ -1,0 +1,17 @@
+{
+  "name": "xray-examples",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "competitor": "ts-node --transpile-only competitor-selection.ts",
+    "minimal": "ts-node --transpile-only minimal-example.ts",
+    "test": "ts-node --transpile-only test.ts",
+    "complex": "ts-node --transpile-only complex-pipeline.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
+
