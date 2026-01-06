@@ -66,6 +66,9 @@ JSONB lets each pipeline store what it needs while still being queryable via Pos
 
 ## System Design
 
+**Excalidraw Diagrams**
+https://excalidraw.com/#json=bwWFNAcEQKQXPi6i1bMWv,OFvvM6NO5XoNxuZzQu-XTA
+
 ```
 ┌─────────────┐         ┌──────────────┐         ┌─────────────┐
 │   SDK       │────────▶│  Event Queue │────────▶│  API Server │
